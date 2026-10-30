@@ -14,6 +14,10 @@ log = logging.getLogger("mind_eaters.collector")
 DETAILS_MAX_AGE = timedelta(hours=24)
 
 
+class EmptyResponse(Exception):
+    """EA answered, but with no club, overall or member data (soft block or outage)."""
+
+
 def _details_due(conn: sqlite3.Connection, now: datetime) -> bool:
     row = conn.execute("SELECT updated_at FROM club_info WHERE id=1").fetchone()
     return row is None or now - datetime.fromisoformat(row[0]) >= DETAILS_MAX_AGE
@@ -30,6 +34,8 @@ def collect_once(conn: sqlite3.Connection, source: EASource, now: datetime) -> b
     _set_status(conn, last_attempt_at=now.isoformat())
     try:
         bundle = source.fetch(include_details=_details_due(conn, now))
+        if bundle.season is None and bundle.overall is None and not bundle.members:
+            raise EmptyResponse("EA returned no club, overall or member data")
         save_bundle(conn, bundle)
     except Exception as e:  # EA is unofficial: any failure must leave saved data intact
         log.warning("collection failed: %s: %s", type(e).__name__, e)
@@ -46,7 +52,12 @@ async def run_forever(settings: Settings, source: EASource) -> None:
     tz = ZoneInfo(settings.tz)
     try:
         while True:
-            await asyncio.to_thread(collect_once, conn, source, datetime.now(tz))
+            try:
+                await asyncio.to_thread(collect_once, conn, source, datetime.now(tz))
+            except asyncio.CancelledError:
+                raise
+            except Exception:  # e.g. SQLite locked while writing status: keep collecting
+                log.exception("collector iteration failed")
             await asyncio.sleep(settings.collect_interval_s)
     finally:
         conn.close()

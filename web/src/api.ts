@@ -31,7 +31,8 @@ export function clearCache() {
 export const getOverview = () => get<Overview>("/overview");
 export const getPlayers = () => get<Player[]>("/players");
 export const getPlayer = (tag: string) => get<PlayerDetail>(`/players/${encodeURIComponent(tag)}`);
-export const getMatches = (limit = 100) => get<MatchesResponse>(`/matches?limit=${limit}`);
+export const getMatches = (limit = 50, before?: string) =>
+  get<MatchesResponse>(`/matches?limit=${limit}${before ? `&before=${encodeURIComponent(before)}` : ""}`);
 export const getMatch = (id: string) => get<MatchDetail>(`/matches/${encodeURIComponent(id)}`);
 export const getSeasons = () => get<SeasonsResponse>("/seasons");
 export const getStatus = () => get<Status>("/status");

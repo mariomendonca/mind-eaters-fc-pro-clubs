@@ -80,7 +80,9 @@ def test_list_matches_sessions(conn):
 
 def test_list_matches_limit(conn):
     save_bundle(conn, make_bundle())
-    assert sum(len(s["matches"]) for s in queries.list_matches(conn, 2)["sessions"]) == 2
+    # limit 2, but all 3 fixture matches are one session, so the page keeps it whole
+    page = queries.list_matches(conn, 2)
+    assert sum(len(s["matches"]) for s in page["sessions"]) == 3 and page["nextBefore"] is None
 
 
 def test_seasons_partial_first(conn):

@@ -23,8 +23,8 @@ def test_relegation():
 
 def test_games_drop_starts_new_season():
     a, b = detect_periods([Snap(t(0), 60, 2, 4, 0), Snap(t(5), 2, 2, 0, 0)])
-    assert a.ended_at == t(5) and a.campaigns[-1].outcome == "stayed" and a.campaigns[-1].ended_at == t(5)
-    assert b.partial is False and b.promotions_before_tracking == 0 and b.started_at == t(5)
+    assert a.ended_at == t(0) and a.campaigns[-1].outcome == "stayed" and a.campaigns[-1].ended_at == t(0)
+    assert b.partial is False and b.promotions_before_tracking == 0 and b.started_at == t(0)
     assert [(c.division, c.outcome, c.partial) for c in b.campaigns] == [(2, "in_progress", False)]
     assert a.last_snap.season_games == 60 and b.last_snap.season_games == 2
 

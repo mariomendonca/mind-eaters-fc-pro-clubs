@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getMatch, getMatches } from "../api";
 import { Loaded } from "../components/Loaded";
 import { MatchRow } from "../components/MatchRow";
 import { StateMessage } from "../components/StateMessage";
 import { fmtDate, fmtTime, posLabel } from "../format";
-import type { Match } from "../types";
+import type { Match, Session } from "../types";
 import { useLoad } from "../useLoad";
 
 function MatchPlayers({ id }: { id: string }) {
@@ -79,16 +79,42 @@ function ExpandableMatch({ match }: { match: Match }) {
 }
 
 export function Matches() {
-  const state = useLoad(() => getMatches(200));
+  const state = useLoad(() => getMatches());
+  const [extra, setExtra] = useState<Session[]>([]);
+  const [next, setNext] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreFailed, setMoreFailed] = useState(false);
+
+  useEffect(() => {
+    if (state.kind === "ok") setNext(state.data.nextBefore);
+  }, [state]);
+
+  async function loadOlder() {
+    if (!next) return;
+    setLoadingMore(true);
+    setMoreFailed(false);
+    try {
+      const page = await getMatches(50, next);
+      setExtra((prev) => [...prev, ...page.sessions]);
+      setNext(page.nextBefore);
+    } catch {
+      setMoreFailed(true);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   return (
     <Loaded state={state}>
-      {({ sessions }) =>
-        sessions.length === 0 ? (
-          <StateMessage kind="no-data">No matches saved yet. They appear after the next session.</StateMessage>
-        ) : (
+      {({ sessions: first }) => {
+        const sessions = [...first, ...extra];
+        if (sessions.length === 0) {
+          return <StateMessage kind="no-data">No matches saved yet. They appear after the next session.</StateMessage>;
+        }
+        return (
           <>
             {sessions.map((s, i) => (
-              <section key={s.start} className="card" style={{ animationDelay: `${i * 0.05}s` }}>
+              <section key={s.start} className="card" style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}>
                 <h3>
                   <span>{`${fmtDate(s.start)} · ${s.wins}W ${s.draws}D ${s.losses}L`}</span>
                   <small>
@@ -100,10 +126,16 @@ export function Matches() {
                 ))}
               </section>
             ))}
+            {next && (
+              <button type="button" className="load-more" onClick={loadOlder} disabled={loadingMore}>
+                {loadingMore ? "Loading…" : "Load older matches"}
+              </button>
+            )}
+            {moreFailed && <p className="state-error">Couldn't load older matches. Try again.</p>}
             <p className="note">Click a match to see every player's stats. History starts from 30 Oct 2026.</p>
           </>
-        )
-      }
+        );
+      }}
     </Loaded>
   );
 }

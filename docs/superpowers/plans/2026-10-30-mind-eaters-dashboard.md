@@ -109,7 +109,7 @@ GET /api/players               -> Player[]
 GET /api/players/{gamertag}    -> 404 | { player: Player;
   history: { matchId: string; timestamp: string; rating: number; goals: number; assists: number; motm: boolean }[]; // oldest first
   tracked: { games: number; goals: number; assists: number; motm: number; avgRating: number } }
-GET /api/matches?limit=50      -> { sessions: { start: string; wins: number; draws: number; losses: number; matches: Match[] }[] } // newest first
+GET /api/matches?limit=50&before=<iso> -> { sessions: { start: string; wins: number; draws: number; losses: number; matches: Match[] }[]; nextBefore: string|null } // newest first; a page never splits a session
 GET /api/matches/{matchId}     -> 404 | { match: Match; players: MatchPlayer[] }  // players by rating desc
 GET /api/seasons -> { eaSeasons: { startedAt: string; endedAt: string|null; partial: boolean;
     promotionsBeforeTracking: number;

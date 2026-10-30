@@ -89,7 +89,7 @@ export type PlayerDetail = {
 };
 
 export type Session = { start: string; wins: number; draws: number; losses: number; matches: Match[] };
-export type MatchesResponse = { sessions: Session[] };
+export type MatchesResponse = { sessions: Session[]; nextBefore: string | null };
 export type MatchDetail = { match: Match; players: MatchPlayer[] };
 
 export type Outcome = "promoted" | "relegated" | "stayed" | "in_progress";

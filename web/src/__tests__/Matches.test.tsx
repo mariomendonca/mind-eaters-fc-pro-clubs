@@ -8,6 +8,7 @@ import { match, mockApi } from "./fixtures";
 const M1 = match({ matchId: "151090313490136" });
 const LIST: MatchesResponse = {
   sessions: [{ start: "2026-10-29T19:37:00-03:00", wins: 7, draws: 2, losses: 1, matches: [M1, match({ matchId: "2", opponentName: "Bodao EC", result: "loss", goals: 1, goalsAgainst: 4, motm: null })] }],
+  nextBefore: null,
 };
 const DETAIL: MatchDetail = {
   match: M1,
@@ -28,14 +29,14 @@ function renderPage() {
 }
 
 test("session header shows date and record", async () => {
-  mockApi({ "/api/matches?": LIST });
+  mockApi({ "/api/matches?": { ...LIST, nextBefore: null } });
   renderPage();
   expect(await screen.findByText("Thu 29 Oct · 7W 2D 1L")).toBeInTheDocument();
   expect(screen.getByText("Bodao EC")).toBeInTheDocument();
 });
 
 test("clicking a match shows the player table", async () => {
-  mockApi({ "/api/matches?": LIST, "/api/matches/151090313490136": DETAIL });
+  mockApi({ "/api/matches?": { ...LIST, nextBefore: null }, "/api/matches/151090313490136": DETAIL });
   renderPage();
   await userEvent.click(await screen.findByRole("button", { name: /Tamandua Xereka/ }));
   const table = await screen.findByRole("table");
@@ -47,7 +48,20 @@ test("clicking a match shows the player table", async () => {
 });
 
 test("empty history message", async () => {
-  mockApi({ "/api/matches?": { sessions: [] } });
+  mockApi({ "/api/matches?": { sessions: [], nextBefore: null } });
   renderPage();
   expect(await screen.findByText(/No matches saved yet/)).toBeInTheDocument();
+});
+
+test("load older appends the next page", async () => {
+  const older: MatchesResponse = {
+    sessions: [{ start: "2026-10-20T20:00:00-03:00", wins: 0, draws: 0, losses: 1, matches: [match({ matchId: "9", opponentName: "Ancient FC", result: "loss" })] }],
+    nextBefore: null,
+  };
+  mockApi({ "/api/matches?limit=50&before=": older, "/api/matches?": { ...LIST, nextBefore: "2026-10-29T19:37:00-03:00" } });
+  renderPage();
+  await userEvent.click(await screen.findByRole("button", { name: "Load older matches" }));
+  expect(await screen.findByText("Ancient FC")).toBeInTheDocument();
+  expect(screen.getByText("Tamandua Xereka")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Load older matches" })).not.toBeInTheDocument();
 });

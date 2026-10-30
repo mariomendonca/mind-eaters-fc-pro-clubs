@@ -14,6 +14,10 @@ def _dumps(value) -> str:
     return json.dumps(value, default=_iso, ensure_ascii=False)
 
 
+def _canon(data_json: str) -> str:
+    return json.dumps(json.loads(data_json), sort_keys=True)
+
+
 def save_bundle(conn: sqlite3.Connection, bundle: Bundle) -> None:
     now = _iso(bundle.fetched_at)
     raw_by_id = {str(r.get("matchId")): r for r in bundle.raw_matches if isinstance(r, dict)}
@@ -60,6 +64,12 @@ def save_bundle(conn: sqlite3.Connection, bundle: Bundle) -> None:
             )
 
         for mem in bundle.members:
+            prev = conn.execute("SELECT data_json FROM members WHERE gamertag=?", (mem["name"],)).fetchone()
+            if prev is None or _canon(prev[0]) != _canon(_dumps(mem)):
+                conn.execute(
+                    "INSERT OR IGNORE INTO member_snapshots (gamertag, taken_at, data_json) VALUES (?,?,?)",
+                    (mem["name"], now, _dumps(mem)),
+                )
             conn.execute(
                 "INSERT OR REPLACE INTO members (gamertag, data_json, updated_at) VALUES (?,?,?)",
                 (mem["name"], _dumps(mem), now),

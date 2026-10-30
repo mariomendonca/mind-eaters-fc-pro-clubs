@@ -185,3 +185,7 @@ table.stats tr.is-motm td { color: var(--green); }
 .campaign-meta { font-size: 12.5px; margin-top: 4px; }
 .campaign-people { margin-top: 12px; grid-template-columns: 1fr 1fr; }
 .stat b.person { font-size: 17px; overflow-wrap: anywhere; }
+
+.load-more { display: block; margin: 16px auto 0; padding: 12px 22px; border: 1px solid var(--purple); border-radius: 999px; font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); background: rgba(139, 61, 255, 0.12); }
+.load-more:hover:not(:disabled) { background: rgba(139, 61, 255, 0.25); }
+.load-more:disabled { opacity: 0.6; cursor: wait; }

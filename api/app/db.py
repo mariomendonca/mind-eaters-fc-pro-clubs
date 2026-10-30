@@ -55,6 +55,13 @@ CREATE TABLE IF NOT EXISTS members (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS member_snapshots (
+    gamertag TEXT NOT NULL,
+    taken_at TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    PRIMARY KEY (gamertag, taken_at)
+);
+
 CREATE TABLE IF NOT EXISTS club_info (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     data_json TEXT NOT NULL,

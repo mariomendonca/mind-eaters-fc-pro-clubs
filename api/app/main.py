@@ -26,6 +26,7 @@ def create_app(settings: Optional[Settings] = None, source: Optional[EASource] =
         task = None
         if settings.collector_enabled:
             task = asyncio.create_task(run_forever(settings, source or LiveEASource(settings)))
+        app.state.collector_task = task
         yield
         if task:
             task.cancel()
@@ -43,6 +44,10 @@ def create_app(settings: Optional[Settings] = None, source: Optional[EASource] =
 
     @app.get("/api/health")
     def health():
+        # A stopped collector means history is silently lost: fail so Docker restarts us.
+        task = getattr(app.state, "collector_task", None)
+        if task is not None and task.done():
+            return JSONResponse({"status": "collector stopped"}, status_code=503)
         return {"status": "ok"}
 
     @app.get("/api/status")
@@ -68,8 +73,8 @@ def create_app(settings: Optional[Settings] = None, source: Optional[EASource] =
         return data
 
     @app.get("/api/matches")
-    def matches(limit: int = Query(50, ge=1, le=500), conn=Depends(db)):
-        return queries.list_matches(conn, limit)
+    def matches(limit: int = Query(50, ge=1, le=500), before: Optional[str] = None, conn=Depends(db)):
+        return queries.list_matches(conn, limit, before)
 
     @app.get("/api/matches/{match_id}")
     def match(match_id: str, conn=Depends(db)):

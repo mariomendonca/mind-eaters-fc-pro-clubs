@@ -1,7 +1,8 @@
 """Infer EA seasons and division campaigns from club snapshots.
 
 EA only exposes the current season's running totals, so boundaries are inferred:
-- a new EA season starts when the season's games-played counter goes down;
+- a new EA season starts when the season's games-played counter goes down (boundary =
+  the last snapshot before the drop);
 - a new division campaign starts when the current division changes
   (lower number = promoted, division 1 is the top).
 """
@@ -50,10 +51,12 @@ def detect_periods(snaps: list) -> list:
     for prev, cur in zip(snaps, snaps[1:]):
         season = seasons[-1]
         if (cur.season_games or 0) < (prev.season_games or 0):
-            _close(season.campaigns[-1], cur.taken_at, "stayed")
-            season.ended_at = cur.taken_at
-            seasons.append(EASeason(cur.taken_at, None, False, 0,
-                                    [Campaign(cur.division, cur.taken_at, None, "in_progress", False)], cur))
+            # Matches after `prev` already belong to the new season (they produced cur's counts),
+            # so the boundary is the last snapshot before the reset.
+            _close(season.campaigns[-1], prev.taken_at, "stayed")
+            season.ended_at = prev.taken_at
+            seasons.append(EASeason(prev.taken_at, None, False, 0,
+                                    [Campaign(cur.division, prev.taken_at, None, "in_progress", False)], cur))
             continue
         if cur.division != prev.division:
             outcome = "promoted" if cur.division < prev.division else "relegated"

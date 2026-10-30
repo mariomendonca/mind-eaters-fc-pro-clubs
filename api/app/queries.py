@@ -2,7 +2,7 @@
 import json
 import sqlite3
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from app.seasons import Snap, detect_periods
@@ -81,6 +81,12 @@ def _leader(players: list, field: str) -> Optional[dict]:
     return {"gamertag": top["gamertag"], "displayName": top["displayName"], "value": top.get(field)}
 
 
+def _latest_json(conn, column: str) -> dict:
+    row = conn.execute(f"SELECT {column} FROM club_snapshots WHERE {column} IS NOT NULL "
+                       "ORDER BY taken_at DESC, id DESC LIMIT 1").fetchone()
+    return json.loads(row[0]) if row else {}
+
+
 def _latest_snapshot(conn):
     return conn.execute("SELECT * FROM club_snapshots ORDER BY taken_at DESC, id DESC LIMIT 1").fetchone()
 
@@ -96,8 +102,10 @@ def get_overview(conn) -> Optional[dict]:
     snap = _latest_snapshot(conn)
     if snap is None:
         return None
-    season = json.loads(snap["season_json"]) if snap["season_json"] else {}
-    overall = json.loads(snap["overall_json"]) if snap["overall_json"] else {}
+    # EA can briefly omit one part (e.g. the club is missing from the season search at a
+    # season start): show the latest known value of each part instead of blanks.
+    season = _latest_json(conn, "season_json")
+    overall = _latest_json(conn, "overall_json")
     info_row = conn.execute("SELECT data_json FROM club_info WHERE id=1").fetchone()
     info = json.loads(info_row["data_json"]) if info_row else {}
     names = display_names(conn)
@@ -157,10 +165,32 @@ def get_player(conn, gamertag: str) -> Optional[dict]:
     }
 
 
-def list_matches(conn, limit: int) -> dict:
+SESSION_GAP = timedelta(hours=2)
+
+
+def list_matches(conn, limit: int, before: Optional[str] = None) -> dict:
+    """Newest `limit` matches older than `before`, extended so the oldest session is never split."""
+    if before:
+        rows = conn.execute("SELECT * FROM matches WHERE timestamp < ? ORDER BY timestamp DESC LIMIT ?", (before, limit)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM matches ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+
+    older = None
+    while rows:
+        older = conn.execute("SELECT * FROM matches WHERE timestamp < ? ORDER BY timestamp DESC LIMIT 1",
+                             (rows[-1]["timestamp"],)).fetchone()
+        if older is None:
+            break
+        gap = datetime.fromisoformat(rows[-1]["timestamp"]) - datetime.fromisoformat(older["timestamp"])
+        if gap > SESSION_GAP:
+            break
+        rows.append(older)
+
     names = display_names(conn)
-    rows = conn.execute("SELECT * FROM matches ORDER BY timestamp DESC LIMIT ?", (limit,))
-    return {"sessions": group_sessions(_matches(conn, rows, names))}
+    return {
+        "sessions": group_sessions(_matches(conn, rows, names), SESSION_GAP),
+        "nextBefore": rows[-1]["timestamp"] if rows and older is not None else None,
+    }
 
 
 def get_match(conn, match_id: str) -> Optional[dict]:
