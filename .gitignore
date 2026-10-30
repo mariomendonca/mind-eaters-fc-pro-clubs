@@ -5,3 +5,5 @@ __pycache__/
 *.db
 .venv/
 .DS_Store
+*.db-shm
+*.db-wal
