@@ -6,7 +6,7 @@
 
 **Architecture:** A Python FastAPI service (`api/`) wraps `fc-clubs-api`, runs a background collector that writes to SQLite, derives sessions, EA seasons and division campaigns, and serves JSON under `/api/*`. A Vite + React SPA (`web/`) renders it in the approved purple/green look and is served by nginx. Both ship as GHCR images and deploy through the existing `personal-vps-infra` pattern behind Caddy.
 
-**Tech Stack:** Python 3.12, FastAPI, uvicorn, `fc-clubs-api==0.3.1`, sqlite3 (stdlib), pytest + httpx · Node 22, Vite, React 18, TypeScript, react-router-dom 6, Vitest + Testing Library · Docker, nginx, GitHub Actions, Caddy.
+**Tech Stack:** Python 3.12, FastAPI, uvicorn, `fc-clubs-api==0.3.0`, sqlite3 (stdlib), pytest + httpx · Node 22, Vite, React 18, TypeScript, react-router-dom 6, Vitest + Testing Library · Docker, nginx, GitHub Actions, Caddy.
 
 **Spec:** `docs/superpowers/specs/2026-10-30-mind-eaters-dashboard-design.md`
 **Visual reference:** `docs/design/look-v1.html` (copy its CSS tokens, fonts and component styles; it is the approved look)
@@ -16,7 +16,7 @@
 - Club ID `1232878`, club name `Mind Eaters FC`, platform `common-gen5` (library default).
 - Display/grouping timezone `America/Sao_Paulo`.
 - Collection every 900 s; at most ~6 EA calls per run, 1 s apart; club details at most once per 24 h.
-- Pin `fc-clubs-api==0.3.1`.
+- Pin `fc-clubs-api==0.3.0`.
 - Colors: `--purple:#8b3dff`, `--green:#39ff88`, ink `#0b0812`; fonts Big Shoulders Display / Familjen Grotesk / Martian Mono.
 - Player key = gamertag (`name` in EA rows); display = `playerName` from member stats, falling back to gamertag.
 - Division 1 is top, 6 is bottom: a lower number means promoted.
@@ -109,7 +109,7 @@ GET /api/players               -> Player[]
 GET /api/players/{gamertag}    -> 404 | { player: Player;
   history: { matchId: string; timestamp: string; rating: number; goals: number; assists: number; motm: boolean }[]; // oldest first
   tracked: { games: number; goals: number; assists: number; motm: number; avgRating: number } }
-GET /api/matches?limit=50      -> { sessions: { start: string; wins: number; draws: number; losses: number; matches: Match[] }[] } // newest first
+GET /api/matches?limit=50&before=<iso> -> { sessions: { start: string; wins: number; draws: number; losses: number; matches: Match[] }[]; nextBefore: string|null } // newest first; a page never splits a session
 GET /api/matches/{matchId}     -> 404 | { match: Match; players: MatchPlayer[] }  // players by rating desc
 GET /api/seasons -> { eaSeasons: { startedAt: string; endedAt: string|null; partial: boolean;
     promotionsBeforeTracking: number;
@@ -138,7 +138,7 @@ GET /api/seasons -> { eaSeasons: { startedAt: string; endedAt: string|null; part
   - `club_info(id INTEGER PK CHECK(id=1), data_json TEXT, updated_at TEXT)`
   - `collector_status(id INTEGER PK CHECK(id=1), last_attempt_at TEXT, last_success_at TEXT, last_error TEXT)`
 
-- [ ] **Step 1:** The git repo already exists (GitHub `mariomendonca/mind-eaters-fc-pro-clubs`, local folder `mind-eaters-fc/`, `.gitignore` committed). Create `api/pyproject.toml` with deps `fastapi`, `uvicorn[standard]`, `fc-clubs-api==0.3.1` and dev extras `pytest`, `httpx`; set `[tool.pytest.ini_options] pythonpath=["."]`. Create venv: `cd api && python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"`.
+- [ ] **Step 1:** The git repo already exists (GitHub `mariomendonca/mind-eaters-fc-pro-clubs`, local folder `mind-eaters-fc/`, `.gitignore` committed). Create `api/pyproject.toml` with deps `fastapi`, `uvicorn[standard]`, `fc-clubs-api==0.3.0` and dev extras `pytest`, `httpx`; set `[tool.pytest.ini_options] pythonpath=["."]`. Create venv: `cd api && python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"`.
 - [ ] **Step 2: Write the failing test** `tests/test_db.py`:
 
 ```python

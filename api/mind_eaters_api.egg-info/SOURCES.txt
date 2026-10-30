@@ -1,0 +1,7 @@
+pyproject.toml
+app/__init__.py
+mind_eaters_api.egg-info/PKG-INFO
+mind_eaters_api.egg-info/SOURCES.txt
+mind_eaters_api.egg-info/dependency_links.txt
+mind_eaters_api.egg-info/requires.txt
+mind_eaters_api.egg-info/top_level.txt
