@@ -169,3 +169,8 @@ table.stats tr.is-motm td { color: var(--green); }
   .player-layout { grid-template-columns: minmax(0, 1fr); }
   .player-hero { position: static; }
 }
+
+/* matches page */
+.match-detail { padding: 4px 0 14px; }
+.match-time { font-size: 12.5px; padding: 6px 0 0 40px; }
+@media (max-width: 520px) { .match-time { padding-left: 0; } }
