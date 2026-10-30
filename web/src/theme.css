@@ -154,3 +154,18 @@ table.stats tr.is-motm td { color: var(--green); }
   .match { grid-template-columns: 26px 1fr auto; }
   .match .mvp { grid-column: 2 / -1; text-align: left; }
 }
+
+/* player page */
+.player-layout { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.player-hero { position: sticky; top: 16px; }
+.player-hero .pc { padding: 22px 20px 18px; }
+.player-hero .ovr { font-size: 64px; }
+.player-hero .nm { font-size: 32px; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.stat span { font-size: 10.5px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
+.stat b { font-family: var(--display); font-weight: 900; font-size: 28px; line-height: 1; }
+@media (max-width: 900px) {
+  .player-layout { grid-template-columns: minmax(0, 1fr); }
+  .player-hero { position: static; }
+}
