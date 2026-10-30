@@ -1,0 +1,99 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test-api:
+    name: API tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  test-web:
+    name: Web tests and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  images:
+    name: Build and push images
+    needs: [test-api, test-web]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.app }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-${{ matrix.app }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}-${{ matrix.app }}:main
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,scope=${{ matrix.app }},mode=max
+
+  deploy:
+    name: Dispatch VPS deploy
+    needs: images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check dispatch token
+        env:
+          INFRA_DISPATCH_TOKEN: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$INFRA_DISPATCH_TOKEN" ]; then
+            echo "::error::Missing Actions secret: INFRA_DISPATCH_TOKEN"
+            exit 1
+          fi
+      # The infra repository owns the VPS credentials and performs the deploy.
+      - name: Dispatch deploy-mind-eaters.yml
+        env:
+          GH_TOKEN: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+        run: |
+          gh workflow run deploy-mind-eaters.yml \
+            --repo mariomendonca/personal-vps-infra \
+            --ref main \
+            -f api_image="ghcr.io/${{ github.repository }}-api:${{ github.sha }}" \
+            -f web_image="ghcr.io/${{ github.repository }}-web:${{ github.sha }}"
