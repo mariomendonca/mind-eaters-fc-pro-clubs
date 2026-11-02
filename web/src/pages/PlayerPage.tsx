@@ -4,7 +4,7 @@ import { Loaded } from "../components/Loaded";
 import { PlayerCard } from "../components/PlayerCard";
 import { Sparkline } from "../components/Sparkline";
 import { StateMessage } from "../components/StateMessage";
-import { fmtDate, fmtTime, pct } from "../format";
+import { fmtDate, fmtTime, pct, perGame } from "../format";
 import type { Player } from "../types";
 import { useLoad } from "../useLoad";
 
@@ -22,6 +22,9 @@ function clubStats(p: Player): [string, React.ReactNode][] {
     ["Games", p.gamesPlayed],
     ["Goals", p.goals],
     ["Assists", p.assists],
+    ["Goals per game", perGame(p.goals, p.gamesPlayed)],
+    ["Assists per game", perGame(p.assists, p.gamesPlayed)],
+    ["G + A per game", perGame((p.goals ?? 0) + (p.assists ?? 0), p.gamesPlayed)],
     ["Average rating", p.averageRating.toFixed(1)],
     ["Man of the Match", p.manOfTheMatch],
     ["Win rate", pct(p.winRate)],
@@ -71,6 +74,9 @@ export function PlayerPage() {
                   <Stat label="Games" value={tracked.games} />
                   <Stat label="Goals" value={tracked.goals} />
                   <Stat label="Assists" value={tracked.assists} />
+                  <Stat label="Goals per game" value={perGame(tracked.goals, tracked.games)} />
+                  <Stat label="Assists per game" value={perGame(tracked.assists, tracked.games)} />
+                  <Stat label="G + A per game" value={perGame(tracked.goals + tracked.assists, tracked.games)} />
                   <Stat label="MOTM" value={tracked.motm} />
                   <Stat label="Avg rating" value={tracked.avgRating} />
                 </div>

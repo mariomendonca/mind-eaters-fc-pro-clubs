@@ -1,4 +1,4 @@
-import { ago, fmtDate, fmtTime } from "../format";
+import { ago, fmtDate, fmtTime, perGame } from "../format";
 
 test("ago", () => {
   const now = new Date("2026-10-30T12:00:00-03:00");
@@ -14,4 +14,11 @@ test("fmtDate uses São Paulo time", () => {
 
 test("fmtTime uses São Paulo time", () => {
   expect(fmtTime("2026-10-30T01:36:40Z")).toBe("22:36");
+});
+
+test("perGame rounds to two decimals and handles no games", () => {
+  expect(perGame(117, 108)).toBe("1.08");
+  expect(perGame(4, 2)).toBe("2.00");
+  expect(perGame(5, 0)).toBe("–");
+  expect(perGame(null, 10)).toBe("–");
 });

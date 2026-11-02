@@ -33,6 +33,11 @@ export function pct(n: number | null | undefined): string {
   return n == null ? "–" : `${Math.round(n)}%`;
 }
 
+/** Average per game with two decimals, e.g. perGame(117, 108) → "1.08". */
+export function perGame(total: number | null | undefined, games: number | null | undefined): string {
+  return total == null || !games ? "–" : (total / games).toFixed(2);
+}
+
 export const POSITION: Record<string, string> = {
   goalkeeper: "GK",
   defender: "DEF",
