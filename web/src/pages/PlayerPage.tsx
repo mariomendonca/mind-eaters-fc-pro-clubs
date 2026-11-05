@@ -27,6 +27,7 @@ function clubStats(p: Player): [string, React.ReactNode][] {
     ["G + A per game", perGame((p.goals ?? 0) + (p.assists ?? 0), p.gamesPlayed)],
     ["Average rating", p.averageRating.toFixed(1)],
     ["Man of the Match", p.manOfTheMatch],
+    ["MOTM per game", perGame(p.manOfTheMatch, p.gamesPlayed)],
     ["Win rate", pct(p.winRate)],
     ["Pass accuracy", pct(p.passSuccessRate)],
     ["Passes made", p.passesMade],
@@ -78,6 +79,7 @@ export function PlayerPage() {
                   <Stat label="Assists per game" value={perGame(tracked.assists, tracked.games)} />
                   <Stat label="G + A per game" value={perGame(tracked.goals + tracked.assists, tracked.games)} />
                   <Stat label="MOTM" value={tracked.motm} />
+                  <Stat label="MOTM per game" value={perGame(tracked.motm, tracked.games)} />
                   <Stat label="Avg rating" value={tracked.avgRating} />
                 </div>
                 <div style={{ marginTop: 16 }}>
