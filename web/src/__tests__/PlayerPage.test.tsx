@@ -40,7 +40,7 @@ test("player page shows every stat with plain labels", async () => {
   for (const text of ["Games108", "Goals117", "Assists98", "Average rating8.2", "Man of the Match27",
     "Win rate51%", "Pass accuracy78%", "Passes made500", "Shot accuracy40%", "Tackles made40",
     "Tackle success35%", "Clean sheets0", "Red cards0",
-    "Goals per game1.08", "Assists per game0.91", "G + A per game1.99"]) {
+    "Goals per game1.08", "Assists per game0.91", "G + A per game1.99", "MOTM per game0.25"]) {
     expect(club).toHaveTextContent(text);
   }
 });
@@ -55,6 +55,7 @@ test("player page shows tracked totals and recent matches", async () => {
   expect(tracked).toHaveTextContent("Goals per game1.50");
   expect(tracked).toHaveTextContent("Assists per game2.00");
   expect(tracked).toHaveTextContent("G + A per game3.50");
+  expect(tracked).toHaveTextContent("MOTM per game0.50");
   expect(screen.getByTestId("history")).toHaveTextContent("9.9");
 });
 
