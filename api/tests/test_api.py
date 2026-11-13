@@ -1,6 +1,7 @@
 from fc_clubs_api import FC27HTTPError
 
 from app.collector import collect_once
+from app.config import Settings
 from tests.factories import MATCH_ID, FakeEASource, make_bundle, t
 
 
