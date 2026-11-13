@@ -10,6 +10,14 @@ export type LoadState<T> =
 
 export function useLoad<T>(load: () => Promise<T>, deps: unknown[] = []): LoadState<T> {
   const [state, setState] = useState<LoadState<T>>({ kind: "loading" });
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const onRefresh = () => setTick((t) => t + 1);
+    window.addEventListener("app:refresh", onRefresh);
+    return () => window.removeEventListener("app:refresh", onRefresh);
+  }, []);
+
   useEffect(() => {
     let alive = true;
     setState({ kind: "loading" });
@@ -26,6 +34,6 @@ export function useLoad<T>(load: () => Promise<T>, deps: unknown[] = []): LoadSt
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [...deps, tick]);
   return state;
 }

@@ -1,13 +1,15 @@
 import asyncio
 import contextlib
 import logging
+from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from app import queries
-from app.collector import run_forever
+from app.collector import collect_once, run_forever
 from app.config import Settings, get_settings
 from app.db import connect, init_schema
 from app.ea import EASource, LiveEASource
@@ -17,6 +19,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 def create_app(settings: Optional[Settings] = None, source: Optional[EASource] = None) -> FastAPI:
     settings = settings or get_settings()
+    actual_source = source or LiveEASource(settings)
+    refresh_lock = asyncio.Lock()
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -25,7 +29,7 @@ def create_app(settings: Optional[Settings] = None, source: Optional[EASource] =
         conn.close()
         task = None
         if settings.collector_enabled:
-            task = asyncio.create_task(run_forever(settings, source or LiveEASource(settings)))
+            task = asyncio.create_task(run_forever(settings, actual_source))
         app.state.collector_task = task
         yield
         if task:
@@ -53,6 +57,18 @@ def create_app(settings: Optional[Settings] = None, source: Optional[EASource] =
     @app.get("/api/status")
     def status(conn=Depends(db)):
         return queries.get_status(conn)
+
+    @app.post("/api/refresh")
+    async def refresh(conn=Depends(db)):
+        if refresh_lock.locked():
+            return JSONResponse({"status": "busy", "message": "Collection already in progress"}, status_code=429)
+        async with refresh_lock:
+            now = datetime.now(ZoneInfo(settings.tz))
+            success = await asyncio.to_thread(collect_once, conn, actual_source, now)
+            st = queries.get_status(conn)
+            if not success:
+                return JSONResponse({"status": "error", "error": st.get("lastError")}, status_code=502)
+            return {"status": "ok", "lastSuccessAt": st.get("lastSuccessAt")}
 
     @app.get("/api/overview")
     def overview(conn=Depends(db)):

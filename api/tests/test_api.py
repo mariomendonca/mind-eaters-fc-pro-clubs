@@ -63,3 +63,28 @@ def test_players_seasons_status_routes(conn, client):
     assert client.get("/api/players/bielpontes04").json()["tracked"]["games"] == 3
     assert client.get("/api/seasons").json()["eaSeasons"][0]["partial"] is True
     assert client.get("/api/status").json()["lastError"] is None
+
+
+def test_refresh_route_success(db_path):
+    from app.main import create_app
+    from fastapi.testclient import TestClient
+
+    src = FakeEASource([make_bundle()])
+    app = create_app(Settings(db_path=db_path, collector_enabled=False), source=src)
+    with TestClient(app) as c:
+        r = c.post("/api/refresh")
+        assert r.status_code == 200
+        assert r.json()["status"] == "ok"
+        assert r.json()["lastSuccessAt"] is not None
+
+
+def test_refresh_route_failure(db_path):
+    from app.main import create_app
+    from fastapi.testclient import TestClient
+
+    src = FakeEASource([RuntimeError("EA network timeout")])
+    app = create_app(Settings(db_path=db_path, collector_enabled=False), source=src)
+    with TestClient(app) as c:
+        r = c.post("/api/refresh")
+        assert r.status_code == 502
+        assert r.json()["status"] == "error"
