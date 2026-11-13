@@ -54,7 +54,8 @@ h1 em { font-style: normal; color: var(--green); text-shadow: 0 0 24px rgba(57, 
 .sr .big { font-family: var(--display); font-weight: 900; font-size: 58px; color: var(--purple-soft); line-height: 1; }
 
 /* tabs */
-.tabs { display: flex; gap: 4px; margin: 26px 0 22px; border-bottom: 1px solid var(--line); overflow-x: auto; animation: rise 0.6s 0.08s ease both; }
+.tabs { display: flex; gap: 4px; margin: 26px 0 22px; border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; animation: rise 0.6s 0.08s ease both; }
+.tabs::-webkit-scrollbar { display: none; }
 .tabs a { padding: 12px 18px; color: var(--muted); text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
 .tabs a:hover { color: var(--text); }
 .tabs a.on { color: var(--text); border-color: var(--green); }
