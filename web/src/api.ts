@@ -36,3 +36,17 @@ export const getMatches = (limit = 50, before?: string) =>
 export const getMatch = (id: string) => get<MatchDetail>(`/matches/${encodeURIComponent(id)}`);
 export const getSeasons = () => get<SeasonsResponse>("/seasons");
 export const getStatus = () => get<Status>("/status");
+
+export async function postRefresh(): Promise<{ status: string; lastSuccessAt?: string }> {
+  const res = await fetch("/api/refresh", { method: "POST" });
+  if (res.status === 429) {
+    throw new Error("Collection already in progress");
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  clearCache();
+  window.dispatchEvent(new CustomEvent("app:refresh"));
+  return (await res.json()) as { status: string; lastSuccessAt?: string };
+}

@@ -25,3 +25,26 @@ test("tabs render and mark the active route", async () => {
   expect(screen.getByRole("link", { name: "Players" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: "Overview" })).not.toHaveAttribute("aria-current");
 });
+
+test("refresh button triggers api refresh", async () => {
+  let calledRefresh = false;
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const url = String(input);
+    if (url.includes("/api/refresh") && init?.method === "POST") {
+      calledRefresh = true;
+      return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
+    }
+    return new Response("{}", { status: 200 });
+  });
+
+  render(
+    <MemoryRouter initialEntries={["/"]}>
+      <AppRoutes />
+    </MemoryRouter>,
+  );
+
+  const btn = screen.getByRole("button", { name: "Refresh stats" });
+  expect(btn).toBeInTheDocument();
+  btn.click();
+  await vi.waitFor(() => expect(calledRefresh).toBe(true));
+});

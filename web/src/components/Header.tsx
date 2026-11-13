@@ -1,4 +1,5 @@
-import { getOverview, getStatus } from "../api";
+import { useState } from "react";
+import { getOverview, getStatus, postRefresh } from "../api";
 import { ago } from "../format";
 import { useLoad } from "../useLoad";
 
@@ -7,6 +8,21 @@ export function Header() {
   const status = useLoad(getStatus);
   const club = overview.kind === "ok" ? overview.data.club : null;
   const st = status.kind === "ok" ? status.data : null;
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshError(null);
+    try {
+      await postRefresh();
+    } catch (err: unknown) {
+      setRefreshError(err instanceof Error ? err.message : "Refresh failed");
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   return (
     <header className="masthead">
@@ -27,11 +43,26 @@ export function Header() {
               {club.stadium && <span>{club.stadium}</span>}
             </>
           )}
-          {st?.lastSuccessAt && (
-            <span className={st.lastError ? "stale" : undefined} title={st.lastError ?? undefined}>
-              updated {ago(st.lastSuccessAt)}
-            </span>
-          )}
+          <span className="refresh-wrap">
+            {st?.lastSuccessAt && (
+              <span className={st.lastError ? "stale" : undefined} title={st.lastError ?? undefined}>
+                updated {ago(st.lastSuccessAt)}
+              </span>
+            )}
+            <button
+              type="button"
+              className={`refresh-btn ${refreshing ? "spinning" : ""}`}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title={refreshError ?? (refreshing ? "Fetching latest data from EA…" : "Refresh stats from EA now")}
+              aria-label="Refresh stats"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+              </svg>
+            </button>
+            {refreshError && <span className="stale" style={{ fontSize: 12 }}>({refreshError})</span>}
+          </span>
         </div>
       </div>
       {club && (
