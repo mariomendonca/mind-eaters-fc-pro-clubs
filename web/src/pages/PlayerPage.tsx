@@ -5,7 +5,7 @@ import { PlayerCard } from "../components/PlayerCard";
 import { Sparkline } from "../components/Sparkline";
 import { StateMessage } from "../components/StateMessage";
 import { fmtDate, fmtTime, pct, perGame } from "../format";
-import type { Player } from "../types";
+import type { ArchetypeSplit, Player } from "../types";
 import { useLoad } from "../useLoad";
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
@@ -39,6 +39,45 @@ function clubStats(p: Player): [string, React.ReactNode][] {
   ];
 }
 
+function ArchetypeTable({ splits }: { splits: ArchetypeSplit[] }) {
+  return (
+    <div className="table-wrap">
+      <table className="stats">
+        <thead>
+          <tr>
+            <th>Archetype</th>
+            <th className="n">Games</th>
+            <th className="n">W-D-L</th>
+            <th className="n">Win %</th>
+            <th className="n">G</th>
+            <th className="n">A</th>
+            <th className="n">G/game</th>
+            <th className="n">Rating</th>
+            <th className="n">MOTM</th>
+          </tr>
+        </thead>
+        <tbody>
+          {splits.map((a) => (
+            <tr key={a.id}>
+              <td>{a.name}</td>
+              <td className="n">{a.games}</td>
+              <td className="n">
+                {a.wins}-{a.draws}-{a.losses}
+              </td>
+              <td className="n">{pct((a.wins / a.games) * 100)}</td>
+              <td className="n">{a.goals}</td>
+              <td className="n">{a.assists}</td>
+              <td className="n">{perGame(a.goals, a.games)}</td>
+              <td className="n">{a.avgRating == null ? "–" : a.avgRating.toFixed(1)}</td>
+              <td className="n">{a.motm}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function PlayerPage() {
   const { gamertag = "" } = useParams();
   const state = useLoad(() => getPlayer(gamertag), [gamertag]);
@@ -51,7 +90,7 @@ export function PlayerPage() {
     <>
       {back}
       <Loaded state={state} notFound={<StateMessage kind="not-found">Player not found</StateMessage>}>
-        {({ player, history, tracked }) => (
+        {({ player, history, tracked, archetypes }) => (
           <div className="player-layout">
             <div className="player-hero">
               <PlayerCard player={player} />
@@ -86,6 +125,14 @@ export function PlayerPage() {
                   <Sparkline values={history.map((h) => h.rating)} />
                 </div>
               </div>
+              {archetypes.length > 0 && (
+                <div className="card" data-testid="archetypes">
+                  <h3>
+                    By archetype <small>from saved matches</small>
+                  </h3>
+                  <ArchetypeTable splits={archetypes} />
+                </div>
+              )}
               <div className="card" data-testid="history">
                 <h3>
                   Recent matches <small>newest first</small>
@@ -98,6 +145,7 @@ export function PlayerPage() {
                       <thead>
                         <tr>
                           <th>Date</th>
+                          <th>Archetype</th>
                           <th className="n">Rating</th>
                           <th className="n">G</th>
                           <th className="n">A</th>
@@ -110,6 +158,7 @@ export function PlayerPage() {
                             <td>
                               {fmtDate(h.timestamp)} · {fmtTime(h.timestamp)}
                             </td>
+                            <td className="muted">{h.archetype?.name ?? "–"}</td>
                             <td className="n">{h.rating.toFixed(1)}</td>
                             <td className="n">{h.goals}</td>
                             <td className="n">{h.assists}</td>

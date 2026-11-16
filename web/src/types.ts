@@ -1,5 +1,6 @@
 export type Who = { gamertag: string; displayName: string };
 export type Result = "win" | "draw" | "loss";
+export type Archetype = { id: number; name: string };
 
 export type Match = {
   matchId: string;
@@ -31,6 +32,8 @@ export type Player = Who & {
   cleanSheetsDef: number;
   cleanSheetsGK: number;
   redCards: number;
+  /** Archetype used in the player's most recent saved match. */
+  archetype: Archetype | null;
 };
 
 export type MatchPlayer = Who & {
@@ -46,6 +49,7 @@ export type MatchPlayer = Who & {
   saves: number;
   manOfTheMatch: boolean;
   secondsPlayed: number;
+  archetype: Archetype | null;
 };
 
 export type Leader = (Who & { value: number }) | null;
@@ -84,8 +88,30 @@ export type Status = { lastAttemptAt: string | null; lastSuccessAt: string | nul
 
 export type PlayerDetail = {
   player: Player;
-  history: { matchId: string; timestamp: string; rating: number; goals: number; assists: number; motm: boolean }[];
+  history: {
+    matchId: string;
+    timestamp: string;
+    rating: number;
+    goals: number;
+    assists: number;
+    motm: boolean;
+    result: Result;
+    archetype: Archetype | null;
+  }[];
   tracked: { games: number; goals: number; assists: number; motm: number; avgRating: number };
+  archetypes: ArchetypeSplit[];
+};
+
+export type ArchetypeSplit = Archetype & {
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goals: number;
+  assists: number;
+  motm: number;
+  avgRating: number | null;
+  lastPlayed: string;
 };
 
 export type Session = { start: string; wins: number; draws: number; losses: number; matches: Match[] };
@@ -153,3 +179,20 @@ export type Opponent = {
   lastPlayed: string;
   matches: Match[];
 };
+
+export type ArchetypeRecord = Archetype & {
+  /** Matches where at least one of our players used this archetype. */
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  winRate: number;
+  playerGames: number;
+  goals: number;
+  assists: number;
+  motm: number;
+  avgRating: number | null;
+  /** Each of our players' numbers in this archetype. */
+  players: (Who & Omit<ArchetypeSplit, keyof Archetype>)[];
+};
+export type ArchetypesResponse = { archetypes: ArchetypeRecord[]; unused: string[] };

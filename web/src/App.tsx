@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import { Header } from "./components/Header";
 import { StateMessage } from "./components/StateMessage";
 import { Tabs } from "./components/Tabs";
+import { Archetypes } from "./pages/Archetypes";
 import { Insights } from "./pages/Insights";
 import { Matches } from "./pages/Matches";
 import { Opponents } from "./pages/Opponents";
@@ -20,6 +21,7 @@ export function AppRoutes() {
           <Route path="/" element={<Overview />} />
           <Route path="/players" element={<Players />} />
           <Route path="/players/:gamertag" element={<PlayerPage />} />
+          <Route path="/archetypes" element={<Archetypes />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/opponents" element={<Opponents />} />
           <Route path="/seasons" element={<Seasons />} />

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { PlayerPage } from "../pages/PlayerPage";
 import { Players } from "../pages/Players";
@@ -8,10 +8,18 @@ import { PATH, REGINALDO, mockApi } from "./fixtures";
 const DETAIL: PlayerDetail = {
   player: REGINALDO,
   history: [
-    { matchId: "1", timestamp: "2026-10-29T21:00:00-03:00", rating: 8.4, goals: 1, assists: 2, motm: false },
-    { matchId: "2", timestamp: "2026-10-29T22:36:40-03:00", rating: 9.9, goals: 2, assists: 2, motm: true },
+    { matchId: "1", timestamp: "2026-10-29T21:00:00-03:00", rating: 8.4, goals: 1, assists: 2, motm: false,
+      result: "win", archetype: { id: 8, name: "Maestro" } },
+    { matchId: "2", timestamp: "2026-10-29T22:36:40-03:00", rating: 9.9, goals: 2, assists: 2, motm: true,
+      result: "loss", archetype: { id: 12, name: "Finisher" } },
   ],
   tracked: { games: 2, goals: 3, assists: 4, motm: 1, avgRating: 9.15 },
+  archetypes: [
+    { id: 12, name: "Finisher", games: 1, wins: 0, draws: 0, losses: 1, goals: 2, assists: 2, motm: 1, avgRating: 9.9,
+      lastPlayed: "2026-10-29T22:36:40-03:00" },
+    { id: 8, name: "Maestro", games: 1, wins: 1, draws: 0, losses: 0, goals: 1, assists: 2, motm: 0, avgRating: 8.4,
+      lastPlayed: "2026-10-29T21:00:00-03:00" },
+  ],
 };
 
 function renderAt(path: string) {
@@ -64,4 +72,15 @@ test("unknown player shows not found with link back", async () => {
   renderAt("/players/nope");
   expect(await screen.findByText("Player not found")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /Back to players/ })).toHaveAttribute("href", "/players");
+});
+
+test("player page splits stats by archetype", async () => {
+  mockApi({ "/api/players/netozeraaa": { ...DETAIL, player: { ...REGINALDO, archetype: { id: 12, name: "Finisher" } } } });
+  renderAt("/players/netozeraaa");
+  const table = await screen.findByTestId("archetypes");
+  const rows = within(table).getAllByRole("row").slice(1);
+  expect(rows[0]).toHaveTextContent(/Finisher\s*1\s*0-0-1\s*0%\s*2\s*2/);
+  expect(rows[1]).toHaveTextContent("Maestro");
+  expect(within(screen.getByTestId("history")).getAllByText("Maestro")).toHaveLength(1);
+  expect(screen.getAllByText("Finisher").length).toBeGreaterThanOrEqual(3); // card tag + table + history
 });

@@ -13,6 +13,7 @@ export function PlayerCard({ player, delay = 0 }: { player: Player; delay?: numb
         <span className="motm">⭐ {player.manOfTheMatch}</span>
       </div>
       <div className="nm">{player.displayName}</div>
+      {player.archetype && <span className="arch">{player.archetype.name}</span>}
       <div className="tag">
         {player.gamertag} · {player.gamesPlayed} games
       </div>

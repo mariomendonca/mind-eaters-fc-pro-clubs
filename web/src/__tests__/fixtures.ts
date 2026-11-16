@@ -5,7 +5,7 @@ export function player(p: Partial<Player> & { gamertag: string; displayName: str
   return {
     position: "midfielder", overall: 80, gamesPlayed: 50, winRate: 50, goals: 10, assists: 10,
     averageRating: 7.5, manOfTheMatch: 3, shotSuccessRate: 40, passesMade: 500, passSuccessRate: 75,
-    tacklesMade: 40, tackleSuccessRate: 40, cleanSheetsDef: 0, cleanSheetsGK: 0, redCards: 0, ...p,
+    tacklesMade: 40, tackleSuccessRate: 40, cleanSheetsDef: 0, cleanSheetsGK: 0, redCards: 0, archetype: null, ...p,
   };
 }
 

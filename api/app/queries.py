@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
 
+from app.archetypes import ARCHETYPES, archetype
 from app.seasons import Snap, detect_periods
 from app.sessions import group_sessions
 
@@ -51,6 +52,32 @@ def _players_for(conn, match_ids: list) -> dict:
     return by_match
 
 
+def _archetypes_for(conn, match_ids: Optional[list] = None) -> dict:
+    """{(match_id, player_id): archetypeid} read from EA's raw match payload (it isn't in the parsed data)."""
+    if match_ids is None:
+        rows = conn.execute("SELECT match_id, raw_json FROM matches WHERE raw_json IS NOT NULL")
+    elif not match_ids:
+        return {}
+    else:
+        marks = ",".join("?" * len(match_ids))
+        rows = conn.execute(f"SELECT match_id, raw_json FROM matches WHERE raw_json IS NOT NULL AND match_id IN ({marks})", match_ids)
+    out = {}
+    for row in rows:
+        try:
+            clubs = json.loads(row["raw_json"]).get("players") or {}
+        except (ValueError, AttributeError):
+            continue
+        for players in clubs.values():
+            for pid, p in (players or {}).items():
+                if isinstance(p, dict) and p.get("archetypeid") is not None:
+                    out[(row["match_id"], str(pid))] = p["archetypeid"]
+    return out
+
+
+def _archetype_of(archetypes: dict, row) -> Optional[dict]:
+    return archetype(archetypes.get((row["match_id"], str(row["player_id"]))))
+
+
 def _match(row, players: list, names: dict) -> dict:
     motm_rows = [p for p in players if p["motm"]]
     motm = max(motm_rows, key=lambda p: p["rating"] or 0) if motm_rows else None
@@ -94,8 +121,22 @@ def _latest_snapshot(conn):
 
 # ---------- routes ----------
 
+def _latest_archetypes(conn) -> dict:
+    """Each player's archetype in their most recent saved match."""
+    archetypes = _archetypes_for(conn)
+    latest = {}
+    for row in conn.execute(
+            """SELECT p.match_id, p.player_id, p.gamertag FROM match_players p JOIN matches m USING (match_id)
+               ORDER BY m.timestamp ASC"""):
+        a = _archetype_of(archetypes, row)
+        if a:
+            latest[row["gamertag"]] = a
+    return latest
+
+
 def list_players(conn) -> list:
-    players = [_player(m) for m in _members(conn)]
+    latest = _latest_archetypes(conn)
+    players = [dict(_player(m), archetype=latest.get(m["name"])) for m in _members(conn)]
     return sorted(players, key=lambda p: (p["goals"] or 0), reverse=True)
 
 
@@ -145,17 +186,23 @@ def get_player(conn, gamertag: str) -> Optional[dict]:
     row = conn.execute("SELECT data_json FROM members WHERE gamertag=?", (gamertag,)).fetchone()
     if row is None:
         return None
+    rows = conn.execute(
+        """SELECT p.*, m.timestamp, m.result FROM match_players p JOIN matches m USING (match_id)
+           WHERE p.gamertag=? ORDER BY m.timestamp ASC""", (gamertag,)).fetchall()
+    archetypes = _archetypes_for(conn, [r["match_id"] for r in rows])
     history = [
         {"matchId": r["match_id"], "timestamp": r["timestamp"], "rating": r["rating"],
-         "goals": r["goals"], "assists": r["assists"], "motm": bool(r["motm"])}
-        for r in conn.execute(
-            """SELECT p.*, m.timestamp FROM match_players p JOIN matches m USING (match_id)
-               WHERE p.gamertag=? ORDER BY m.timestamp ASC""", (gamertag,))
+         "goals": r["goals"], "assists": r["assists"], "motm": bool(r["motm"]),
+         "result": r["result"], "archetype": _archetype_of(archetypes, r)}
+        for r in rows
     ]
     ratings = [h["rating"] for h in history if h["rating"] is not None]
+    player = _player(json.loads(row["data_json"]))
+    player["archetype"] = next((h["archetype"] for h in reversed(history) if h["archetype"]), None)
     return {
-        "player": _player(json.loads(row["data_json"])),
+        "player": player,
         "history": history,
+        "archetypes": _archetype_splits(history),
         "tracked": {
             "games": len(history),
             "goals": sum(h["goals"] or 0 for h in history),
@@ -164,6 +211,30 @@ def get_player(conn, gamertag: str) -> Optional[dict]:
             "avgRating": round(sum(ratings) / len(ratings), 2) if ratings else 0,
         },
     }
+
+
+def _record(hs: list) -> dict:
+    """W/D/L, output and average rating over a player's games (oldest first)."""
+    ratings = [h["rating"] for h in hs if h["rating"] is not None]
+    return dict(
+        games=len(hs),
+        wins=sum(h["result"] == "win" for h in hs), draws=sum(h["result"] == "draw" for h in hs),
+        losses=sum(h["result"] == "loss" for h in hs),
+        goals=sum(h["goals"] or 0 for h in hs), assists=sum(h["assists"] or 0 for h in hs),
+        motm=sum(1 for h in hs if h["motm"]),
+        avgRating=round(sum(ratings) / len(ratings), 2) if ratings else None,
+        lastPlayed=hs[-1]["timestamp"],
+    )
+
+
+def _archetype_splits(history: list) -> list:
+    """A player's record with each archetype they've used, most-played first."""
+    groups: dict = {}
+    for h in history:
+        if h["archetype"]:
+            groups.setdefault(h["archetype"]["id"], []).append(h)
+    out = [dict(hs[0]["archetype"], **_record(hs)) for hs in groups.values()]
+    return sorted(out, key=lambda a: a["games"], reverse=True)
 
 
 SESSION_GAP = timedelta(hours=2)
@@ -200,6 +271,7 @@ def get_match(conn, match_id: str) -> Optional[dict]:
         return None
     names = display_names(conn)
     players = _players_for(conn, [match_id])[match_id]
+    archetypes = _archetypes_for(conn, [match_id])
     return {
         "match": _match(row, players, names),
         "players": [
@@ -207,7 +279,7 @@ def get_match(conn, match_id: str) -> Optional[dict]:
                  assists=p["assists"], shots=p["shots"], passesMade=p["passes_made"],
                  passAttempts=p["pass_attempts"], tacklesMade=p["tackles_made"],
                  tackleAttempts=p["tackle_attempts"], saves=p["saves"], manOfTheMatch=bool(p["motm"]),
-                 secondsPlayed=p["seconds_played"])
+                 secondsPlayed=p["seconds_played"], archetype=_archetype_of(archetypes, p))
             for p in sorted(players, key=lambda p: p["rating"] or 0, reverse=True)
         ],
     }
@@ -352,3 +424,45 @@ def list_opponents(conn) -> list:
     out.sort(key=lambda o: o["lastPlayed"], reverse=True)
     out.sort(key=lambda o: o["games"], reverse=True)
     return out
+
+
+# ---------- archetypes ----------
+
+def get_archetypes(conn) -> dict:
+    """Each archetype we've used: team record in matches where one of us played it, and every player's numbers in it."""
+    names = display_names(conn)
+    archetypes = _archetypes_for(conn)
+    acc: dict = {}
+    for p in conn.execute(
+            """SELECT p.*, m.timestamp, m.result FROM match_players p JOIN matches m USING (match_id)
+               ORDER BY m.timestamp ASC"""):
+        a = _archetype_of(archetypes, p)
+        if a is None:
+            continue
+        g = acc.setdefault(a["id"], {"archetype": a, "results": {}, "players": {}})
+        g["results"][p["match_id"]] = p["result"]
+        g["players"].setdefault(p["gamertag"], []).append({
+            "result": p["result"], "goals": p["goals"], "assists": p["assists"], "motm": bool(p["motm"]),
+            "rating": p["rating"], "timestamp": p["timestamp"],
+        })
+
+    out = []
+    for g in acc.values():
+        res = Counter(g["results"].values())
+        games = len(g["results"])
+        rows = [r for hs in g["players"].values() for r in hs]
+        ratings = [r["rating"] for r in rows if r["rating"] is not None]
+        players = [dict(_who(tag, names), **_record(hs)) for tag, hs in g["players"].items()]
+        players.sort(key=lambda x: (x["games"], x["goals"]), reverse=True)
+        out.append(dict(
+            g["archetype"], games=games, wins=res["win"], draws=res["draw"], losses=res["loss"],
+            winRate=round(res["win"] / games * 100) if games else 0,
+            playerGames=len(rows), goals=sum(r["goals"] or 0 for r in rows),
+            assists=sum(r["assists"] or 0 for r in rows), motm=sum(r["motm"] for r in rows),
+            avgRating=round(sum(ratings) / len(ratings), 2) if ratings else None,
+            players=players,
+        ))
+    out.sort(key=lambda a: a["games"], reverse=True)
+    used = {a["name"] for a in out}
+    unused = sorted({n for n in ARCHETYPES.values() if n not in used})
+    return {"archetypes": out, "unused": unused}
