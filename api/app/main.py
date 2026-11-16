@@ -103,6 +103,10 @@ def create_app(settings: Optional[Settings] = None, source: Optional[EASource] =
     def seasons(conn=Depends(db)):
         return queries.get_seasons(conn)
 
+    @app.get("/api/time-of-day")
+    def time_of_day(conn=Depends(db)):
+        return queries.get_time_of_day(conn, settings.tz)
+
     return app
 
 
