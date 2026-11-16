@@ -4,6 +4,7 @@ import { StateMessage } from "./components/StateMessage";
 import { Tabs } from "./components/Tabs";
 import { Insights } from "./pages/Insights";
 import { Matches } from "./pages/Matches";
+import { Opponents } from "./pages/Opponents";
 import { Overview } from "./pages/Overview";
 import { PlayerPage } from "./pages/PlayerPage";
 import { Players } from "./pages/Players";
@@ -20,6 +21,7 @@ export function AppRoutes() {
           <Route path="/players" element={<Players />} />
           <Route path="/players/:gamertag" element={<PlayerPage />} />
           <Route path="/matches" element={<Matches />} />
+          <Route path="/opponents" element={<Opponents />} />
           <Route path="/seasons" element={<Seasons />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="*" element={<StateMessage kind="not-found">Page not found.</StateMessage>} />

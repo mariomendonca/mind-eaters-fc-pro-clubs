@@ -320,3 +320,35 @@ def get_time_of_day(conn, tz: str = "America/Sao_Paulo") -> dict:
             "winRate": round(c["win"] / games * 100) if games else 0,
         })
     return {"slots": slots}
+
+
+# ---------- opponents ----------
+
+def list_opponents(conn) -> list:
+    """Every club we've played, with our head-to-head record, most-played first."""
+    names = display_names(conn)
+    rows = conn.execute("SELECT * FROM matches ORDER BY timestamp DESC").fetchall()
+    matches = _matches(conn, rows, names)
+    by_club: dict = {}
+    for row, m in zip(rows, matches):
+        key = row["opponent_id"] if row["opponent_id"] is not None else f"name:{row['opponent_name']}"
+        by_club.setdefault(key, []).append(m)
+    out = []
+    for key, ms in by_club.items():
+        latest = ms[0]  # rows are newest first, so this carries the club's current name/crest
+        out.append({
+            "opponentId": None if isinstance(key, str) else key,
+            "name": latest["opponentName"],
+            "crestUrl": latest["opponentCrestUrl"],
+            "games": len(ms),
+            "wins": sum(m["result"] == "win" for m in ms),
+            "draws": sum(m["result"] == "draw" for m in ms),
+            "losses": sum(m["result"] == "loss" for m in ms),
+            "goals": sum(m["goals"] or 0 for m in ms),
+            "goalsAgainst": sum(m["goalsAgainst"] or 0 for m in ms),
+            "lastPlayed": latest["timestamp"],
+            "matches": ms,
+        })
+    out.sort(key=lambda o: o["lastPlayed"], reverse=True)
+    out.sort(key=lambda o: o["games"], reverse=True)
+    return out

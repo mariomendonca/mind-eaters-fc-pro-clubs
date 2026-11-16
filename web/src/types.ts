@@ -139,3 +139,17 @@ export type TimeSlot = {
   winRate: number;
 };
 export type TimeOfDayResponse = { slots: TimeSlot[] };
+
+export type Opponent = {
+  opponentId: number | null;
+  name: string;
+  crestUrl: string;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goals: number;
+  goalsAgainst: number;
+  lastPlayed: string;
+  matches: Match[];
+};

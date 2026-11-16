@@ -210,3 +210,29 @@ table.stats tr.is-motm td { color: var(--green); }
 .tod-bar i { display: block; height: 100%; }
 .tod-legend { display: flex; gap: 16px; font-size: 12px; margin-bottom: 14px; }
 .tod-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* Opponents */
+.opp-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.search { flex: 1 1 220px; min-width: 0; font: inherit; font-size: 14px; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+.search:focus { outline: none; border-color: var(--purple); }
+.chip { font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel2); color: var(--muted); white-space: nowrap; }
+.chip.on { color: var(--green); border-color: var(--green-dim); }
+.opponent-row { display: grid; grid-template-columns: 1fr auto 52px 84px; gap: 12px; align-items: center; width: 100%; text-align: left; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.opponent-row:hover { background: rgba(139, 61, 255, 0.06); }
+.opponent-row .opp { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.opponent-row .opp > span:not(.pill) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opponent-row .opp img { width: 22px; height: 22px; object-fit: contain; flex: none; }
+.opponent-row .sc { font-family: var(--display); font-weight: 700; font-size: 17px; text-align: right; }
+.pill.games { color: var(--purple-soft); }
+.opp-record { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.opp-record .w { color: var(--green); font-weight: 500; }
+.opp-record .d { color: var(--draw); font-weight: 500; }
+.opp-record .l { color: var(--loss); font-weight: 500; }
+.opp-last { font-size: 12px; text-align: right; }
+.opponent-matches { padding: 0 0 8px 14px; border-left: 2px solid var(--line); margin-left: 10px; }
+.opp-empty { padding: 14px 0; }
+@media (max-width: 520px) {
+  .opponent-row { grid-template-columns: 1fr auto 44px; }
+  .opp-last { display: none; }
+}
+.opponent-row .crest-blank { width: 22px; height: 22px; flex: none; border-radius: 6px; background: var(--line); }

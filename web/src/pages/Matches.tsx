@@ -60,7 +60,7 @@ function MatchPlayers({ id }: { id: string }) {
   );
 }
 
-function ExpandableMatch({ match }: { match: Match }) {
+export function ExpandableMatch({ match }: { match: Match }) {
   const [open, setOpen] = useState(false);
   return (
     <>
