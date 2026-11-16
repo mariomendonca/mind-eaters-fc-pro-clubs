@@ -103,6 +103,10 @@ def create_app(settings: Optional[Settings] = None, source: Optional[EASource] =
     def seasons(conn=Depends(db)):
         return queries.get_seasons(conn)
 
+    @app.get("/api/archetypes")
+    def archetypes(conn=Depends(db)):
+        return queries.get_archetypes(conn)
+
     @app.get("/api/opponents")
     def opponents(conn=Depends(db)):
         return queries.list_opponents(conn)

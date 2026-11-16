@@ -43,3 +43,4 @@ test("no matches shows the no-data state", async () => {
   renderPage();
   expect(await screen.findByText("No matches tracked yet.")).toBeInTheDocument();
 });
+

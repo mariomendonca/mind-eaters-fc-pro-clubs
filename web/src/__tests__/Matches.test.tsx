@@ -14,9 +14,10 @@ const DETAIL: MatchDetail = {
   match: M1,
   players: [
     { gamertag: "netozeraaa", displayName: "Reginaldo", position: "midfielder", rating: 10, goals: 0, assists: 0, shots: 0,
-      passesMade: 0, passAttempts: 0, tacklesMade: 0, tackleAttempts: 0, saves: 0, manOfTheMatch: false, secondsPlayed: 4549 },
+      passesMade: 0, passAttempts: 0, tacklesMade: 0, tackleAttempts: 0, saves: 0, manOfTheMatch: false, secondsPlayed: 4549,
+      archetype: { id: 8, name: "Maestro" } },
     { gamertag: "bielpontes04", displayName: "Path", position: "defender", rating: 9.5, goals: 1, assists: 3, shots: 2,
-      passesMade: 30, passAttempts: 34, tacklesMade: 5, tackleAttempts: 8, saves: 0, manOfTheMatch: true, secondsPlayed: 5400 },
+      passesMade: 30, passAttempts: 34, tacklesMade: 5, tackleAttempts: 8, saves: 0, manOfTheMatch: true, secondsPlayed: 5400, archetype: null },
   ],
 };
 
@@ -45,6 +46,8 @@ test("clicking a match shows the player table", async () => {
   expect(rows[1]).toHaveTextContent("76");
   expect(rows[2]).toHaveClass("is-motm");
   expect(rows[2]).toHaveTextContent("30/34");
+  expect(rows[1]).toHaveTextContent("Maestro");
+  expect(within(rows[2]).getByText("–")).toBeInTheDocument(); // no archetype from EA
 });
 
 test("empty history message", async () => {

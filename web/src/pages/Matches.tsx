@@ -19,6 +19,7 @@ function MatchPlayers({ id }: { id: string }) {
                 <tr>
                   <th>Player</th>
                   <th>Pos</th>
+                  <th>Archetype</th>
                   <th className="n">Rating</th>
                   <th className="n">G</th>
                   <th className="n">A</th>
@@ -37,6 +38,7 @@ function MatchPlayers({ id }: { id: string }) {
                       {p.displayName}
                     </td>
                     <td>{posLabel(p.position)}</td>
+                    <td className="muted">{p.archetype?.name ?? "–"}</td>
                     <td className="n">{p.rating.toFixed(1)}</td>
                     <td className="n">{p.goals}</td>
                     <td className="n">{p.assists}</td>

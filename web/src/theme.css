@@ -236,3 +236,11 @@ table.stats tr.is-motm td { color: var(--green); }
   .opp-last { display: none; }
 }
 .opponent-row .crest-blank { width: 22px; height: 22px; flex: none; border-radius: 6px; background: var(--line); }
+
+/* Archetypes */
+.pc .arch { display: inline-block; margin-top: 6px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--purple-soft); border: 1px solid #4a3480; border-radius: 999px; padding: 2px 8px; }
+.archetype .archetype-name { margin-bottom: 0; }
+.archetype .table-wrap { margin-top: 14px; }
+.player-link { color: var(--text); text-decoration: none; }
+.player-link:hover { color: var(--purple-soft); }
+.archetypes-unused { margin-top: 18px; font-size: 13px; }
