@@ -5,6 +5,7 @@ const TABS = [
   { to: "/players", label: "Players", end: false },
   { to: "/matches", label: "Matches", end: false },
   { to: "/seasons", label: "Seasons", end: false },
+  { to: "/insights", label: "Insights", end: false },
 ];
 
 export function Tabs() {

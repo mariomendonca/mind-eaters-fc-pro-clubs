@@ -126,3 +126,16 @@ export type EASeason = {
   campaigns: Campaign[];
 };
 export type SeasonsResponse = { eaSeasons: EASeason[] };
+
+export type TimeSlot = {
+  slot: "morning" | "afternoon" | "night";
+  label: string;
+  startHour: number;
+  endHour: number;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  winRate: number;
+};
+export type TimeOfDayResponse = { slots: TimeSlot[] };

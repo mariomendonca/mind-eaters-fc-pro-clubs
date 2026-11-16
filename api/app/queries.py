@@ -4,6 +4,7 @@ import sqlite3
 from collections import Counter
 from datetime import datetime, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from app.seasons import Snap, detect_periods
 from app.sessions import group_sessions
@@ -288,3 +289,34 @@ def get_status(conn) -> dict:
     if row is None:
         return {"lastAttemptAt": None, "lastSuccessAt": None, "lastError": None}
     return {"lastAttemptAt": row["last_attempt_at"], "lastSuccessAt": row["last_success_at"], "lastError": row["last_error"]}
+
+
+# ---------- time of day ----------
+
+TIME_SLOTS = (("morning", "Morning", 6, 12), ("afternoon", "Afternoon", 12, 18), ("night", "Night", 18, 6))
+
+
+def _slot(hour: int) -> str:
+    for key, _, start, end in TIME_SLOTS:
+        if (start <= hour < end) if start < end else (hour >= start or hour < end):
+            return key
+    raise ValueError(hour)
+
+
+def get_time_of_day(conn, tz: str = "America/Sao_Paulo") -> dict:
+    """Win/draw/loss record of every tracked match, grouped by the local hour it was played."""
+    zone = ZoneInfo(tz)
+    counts = {key: Counter() for key, *_ in TIME_SLOTS}
+    for row in conn.execute("SELECT timestamp, result FROM matches"):
+        hour = datetime.fromisoformat(row["timestamp"]).astimezone(zone).hour
+        counts[_slot(hour)][row["result"]] += 1
+    slots = []
+    for key, label, start, end in TIME_SLOTS:
+        c = counts[key]
+        games = c["win"] + c["draw"] + c["loss"]
+        slots.append({
+            "slot": key, "label": label, "startHour": start, "endHour": end,
+            "games": games, "wins": c["win"], "draws": c["draw"], "losses": c["loss"],
+            "winRate": round(c["win"] / games * 100) if games else 0,
+        })
+    return {"slots": slots}

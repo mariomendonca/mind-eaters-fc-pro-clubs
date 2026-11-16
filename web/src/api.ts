@@ -1,4 +1,4 @@
-import type { MatchDetail, MatchesResponse, Overview, Player, PlayerDetail, SeasonsResponse, Status } from "./types";
+import type { MatchDetail, MatchesResponse, Overview, Player, PlayerDetail, SeasonsResponse, Status, TimeOfDayResponse } from "./types";
 
 export class NoDataYet extends Error {}
 export class NotFound extends Error {}
@@ -35,6 +35,7 @@ export const getMatches = (limit = 50, before?: string) =>
   get<MatchesResponse>(`/matches?limit=${limit}${before ? `&before=${encodeURIComponent(before)}` : ""}`);
 export const getMatch = (id: string) => get<MatchDetail>(`/matches/${encodeURIComponent(id)}`);
 export const getSeasons = () => get<SeasonsResponse>("/seasons");
+export const getTimeOfDay = () => get<TimeOfDayResponse>("/time-of-day");
 export const getStatus = () => get<Status>("/status");
 
 export async function postRefresh(): Promise<{ status: string; lastSuccessAt?: string }> {

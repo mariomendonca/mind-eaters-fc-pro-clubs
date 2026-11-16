@@ -196,3 +196,17 @@ table.stats tr.is-motm td { color: var(--green); }
 .load-more { display: block; margin: 16px auto 0; padding: 12px 22px; border: 1px solid var(--purple); border-radius: 999px; font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); background: rgba(139, 61, 255, 0.12); }
 .load-more:hover:not(:disabled) { background: rgba(139, 61, 255, 0.25); }
 .load-more:disabled { opacity: 0.6; cursor: wait; }
+
+/* Insights — win/draw/loss by time of day */
+.tod { display: grid; gap: 18px; }
+.tod-row { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.tod-row.best { border-color: var(--green-dim); }
+.tod-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tod-head .name { font-size: 15px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.tod-head .muted { font-size: 12px; }
+.tod-rate { font-family: var(--display); font-weight: 900; font-size: 28px; line-height: 1; }
+.tod-row.best .tod-rate { color: var(--green); }
+.tod-bar { display: flex; height: 12px; border-radius: 6px; background: var(--line); overflow: hidden; margin-top: 10px; gap: 2px; }
+.tod-bar i { display: block; height: 100%; }
+.tod-legend { display: flex; gap: 16px; font-size: 12px; margin-bottom: 14px; }
+.tod-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
